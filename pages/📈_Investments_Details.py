@@ -40,7 +40,7 @@ def top_worst_graph(is_top, stocks, color, graph_title):
             graph_range = [max_value * 1.2, 0]
         else:
             max_value = stocks["earning"].max()
-            color = 'green'
+            color = '#10b981'
             graph_range = [0, max_value * 1.2]
 
     fig = go.Figure()
@@ -216,8 +216,8 @@ if not filtered_df.empty:
     worst_3 = closed_transactions.nsmallest(3, 'earning')[['owner', 'stock', 'earning']]
     worst_3['label'] = worst_3['owner'] + ' - ' + worst_3['stock']
 
-    fig_best = top_worst_graph(True, top_3, 'green', 'Best transactions')
-    fig_worst = top_worst_graph(False, worst_3, '#d61111', 'Worst transactions')
+    fig_best = top_worst_graph(True, top_3, '#10b981', 'Best transactions')
+    fig_worst = top_worst_graph(False, worst_3, '#ef4444', 'Worst transactions')
     fig_ring = ring_chart(closed_transactions)
 
     # Handle open positions for chart
