@@ -19,3 +19,14 @@ def load_data(_engine):
 def clear_cache():
     """Clear all cached data"""
     st.cache_data.clear()
+
+
+def load_cached_data():
+    """Load data from database with caching"""
+    engine = get_connection()
+    df = load_data(engine)
+    return df
+
+
+# df = load_cached_data()
+# df.to_csv(r"C:\Users\gianm\OneDrive\Desktop\finances_db_test")

@@ -167,7 +167,7 @@ def today_rate():
     return usd_rate, pln_rate
 
 
-def calculate_metrics(df, include_dividends=True):
+def calculate_metrics(df, usd_rate, pln_rate, include_dividends=True):
     """Calculate derived columns with caching"""
     df = df.copy()
     # Add calculation columns
@@ -177,10 +177,7 @@ def calculate_metrics(df, include_dividends=True):
         df["total_sell"] = df["price_sell"] * df["quantity_sell"]
     df["earning"] = df["total_sell"] - df["total_buy"]
 
-    # Convert earnings to EUR
-    usd_rate, pln_rate = today_rate()
-    df["earning"] = df.apply(lambda row: convert_open_to_eur(row, "earning", "date_sell", usd_rate, pln_rate)
-                             , axis=1)
+    df["earning"] = df.apply(lambda row: convert_open_to_eur(row, "earning", "date_sell", usd_rate, pln_rate), axis=1)
     return df
 
 

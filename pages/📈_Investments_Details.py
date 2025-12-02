@@ -2,6 +2,7 @@ import datetime
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
+from plotly.colors import qualitative
 from utilities import calculations
 
 
@@ -92,17 +93,60 @@ def top_worst_graph(is_top, stocks, color, graph_title):
     return fig
 
 
+def ring_chart(closed_transactions):
+    # Group by stock and sum all earnings (so multiple trades are combined)
+    stock_summary = (
+        closed_transactions
+        .groupby('stock', as_index=False)['earning']
+        .sum()
+    )
+
+    top_4 = stock_summary.nlargest(4, 'earning')
+    # Sum of the rest (not in top 4)
+    others_sum = stock_summary[~stock_summary['stock'].isin(top_4['stock'])]['earning'].sum()
+
+    labels = list(top_4['stock']) + ["Others"]
+    values = list(top_4['earning']) + [others_sum]
+
+    colors = qualitative.Safe[:len(labels)]
+
+    # Create donut chart
+    fig = go.Figure(data=[go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.8,
+        textinfo='label+percent',  # only percent on chart
+        textposition='outside',  # move labels outside
+        marker=dict(colors=colors)
+    )])
+
+    fig.update_layout(
+        title=dict(
+            text="Most profitable stocks",
+            x=0.25,  # Center the title
+            font=dict(size=15, family='Arial', color='#b8b6b6')
+        ),
+        height=320,
+        showlegend=False,
+        legend_title_text="Stocks",
+    )
+
+    return fig
+
+
 # Retrieve df
 df = st.session_state.get("df")
 df = df[df["stock"] != 'Salary']
 df["owner"] = "Gim"
+usd_rate = st.session_state.get("usd")
+pln_rate = st.session_state.get("pln")
 
 st.title("Investments Portfolio")
 st.write("")
 
 today = datetime.date.today()
 
-col1, col2 = st.columns([2, 1])  # col1 is twice as wide
+col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
     with st.expander("Settings ⚙️", expanded=False):
         col_1, col_2 = st.columns([2, 5])
@@ -114,7 +158,7 @@ with col1:
     st.write("")
 
 # Calculate metrics with caching
-df_with_metrics = calculations.calculate_metrics(df, include_dividends)
+df_with_metrics = calculations.calculate_metrics(df, usd_rate, pln_rate, include_dividends)
 
 # Calculate owner statistics
 owner_stats = calculations.calculate_owner_stats(df_with_metrics)
@@ -127,45 +171,34 @@ top_3_earners = sorted(owner_stats.items(),
 # Display owner cards
 selected_owners = ['Gim']
 if selected_owners:
-    # Create cards for selected owners
-    cards_per_row = len(selected_owners) if len(selected_owners) in [3, 4] else 3  # 4
-    rows_needed = (len(selected_owners) + cards_per_row - 1) // cards_per_row
+    stats = owner_stats['Gim']
 
-    for row in range(rows_needed):
-        cols = st.columns(cards_per_row)
-        for i in range(cards_per_row):
-            owner_idx = row * cards_per_row + i
-            if owner_idx < len(selected_owners):
-                owner = selected_owners[owner_idx]
-                stats = owner_stats[owner]
+    with col3:
+        # Create card styling
+        earnings_color = "green" if stats["total_earnings"] >= 0 else "#d61111"
+        worst_color = "green" if stats["worst_trade"] >= 0 else "#d61111"
 
-                with cols[i]:
-                    # Create card styling
-                    earnings_color = "green" if stats["total_earnings"] >= 0 else "#d61111"
-                    worst_color = "green" if stats["worst_trade"] >= 0 else "#d61111"
-
-                    st.markdown(f"""
-                    <div style="
-                        border: 1px solid #ddd;
-                        border-radius: 10px;
-                        padding: 15px;
-                        margin: 10px 0;
-                        background-color: #222;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    ">
-                        <h3 style="margin-top: 0; color: #b8b6b6;">👤 {owner}</h3>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <div><strong>💰 Total Earnings:</strong> 
-                                <span style="color: {earnings_color}">€{stats['total_earnings']:.2f}</span>
-                            </div>
-                            <div><strong>📅 Avg. Hold Time:</strong> {stats['avg_holding_days']:.0f} days</div>
-                            <div><strong>🎯 Win Rate:</strong> {stats['win_rate']:.1f}%</div>
-                            <div><strong>📊 Transactions:</strong> {stats['total_transactions']} closed, {stats['open_positions']} open</div>
-                            <div><strong>🏆 Best Trade:</strong> <span style="color: green">€{stats['best_trade']:.2f}</span></div>
-                            <div><strong>📉 Worst Trade:</strong> <span style="color: {worst_color}">€{stats['worst_trade']:.2f}</span></div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #222;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        ">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div><strong>💰 Total Earnings:</strong> 
+                    <span style="color: {earnings_color}">€{stats['total_earnings']:.2f}</span>
+                </div>
+                <div><strong>📅 Avg. Hold Time:</strong> {stats['avg_holding_days']:.0f} days</div>
+                <div><strong>🎯 Win Rate:</strong> {stats['win_rate']:.1f}%</div>
+                <div><strong>📊 Transactions:</strong> {stats['total_transactions']} closed, {stats['open_positions']} open</div>
+                <div><strong>🏆 Best Trade:</strong> <span style="color: green">€{stats['best_trade']:.2f}</span></div>
+                <div><strong>📉 Worst Trade:</strong> <span style="color: {worst_color}">€{stats['worst_trade']:.2f}</span></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.write("")
 
@@ -185,6 +218,7 @@ if not filtered_df.empty:
 
     fig_best = top_worst_graph(True, top_3, 'green', 'Best transactions')
     fig_worst = top_worst_graph(False, worst_3, '#d61111', 'Worst transactions')
+    fig_ring = ring_chart(closed_transactions)
 
     # Handle open positions for chart
     if include_open:
@@ -200,8 +234,8 @@ if not filtered_df.empty:
 
     with col1:
         st.markdown("Total Earnings")
+        chart_df.index = pd.to_datetime(chart_df.index)
         st.line_chart(chart_df)
-        print(chart_df)
 
         with st.expander("Show all transactions details", expanded=False):
             st.dataframe(open_df.drop(columns=["quantity_buy", "price_sell", "quantity_sell"]),
@@ -226,7 +260,7 @@ if not filtered_df.empty:
         st.plotly_chart(fig_best, use_container_width=True)
         st.write("")
         st.plotly_chart(fig_worst, use_container_width=True)
-        # st.write("")
-        # st.plotly_chart(fig_ring, use_container_width=True)
+    with col3:
+        st.plotly_chart(fig_ring, use_container_width=True)
 else:
     st.info("Select at least one owner to view data.")

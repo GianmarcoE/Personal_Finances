@@ -5,16 +5,22 @@ from utilities import calculations
 
 
 def main(dev_run):
-    def nav_button(label, target, action):
-        clicked = st.sidebar.button(label, use_container_width=True, on_click=action)
-        if clicked:
-            st.session_state.page = target
-
     st.set_page_config(initial_sidebar_state="collapsed", layout="wide")
+
+    if not dev_run:
+        engine = get_connection()
+        df = load_data(engine)
+    else:
+        df = pd.read_csv(r"C:\Users\gianm\OneDrive\Desktop\finances_db_test")
+
+    st.session_state["df"] = df
+    usd, pln = calculations.today_rate()
+    st.session_state["usd"] = usd
+    st.session_state["pln"] = pln
 
     col_1, col_2 = st.columns([5, 1])
     with col_1:
-        st.title("My finances")
+        st.title("Overview")
     with col_2:
         if st.button("🔄 Refresh Data"):
             clear_cache()
@@ -24,18 +30,20 @@ def main(dev_run):
     st.write("")
     st.write("")
 
-    engine = get_connection()
-    df = load_data(engine)
-    st.session_state["df"] = df
-
     def salary(df):
         df = df[df["stock"] == 'Salary']
 
         st.subheader("Income & Expenses")
-        total_income = int(df["price_sell"].sum())
-        avg_income = int(df["price_sell"].mean())
-        expenditures = int(df["price_buy"].sum())
-        savings = int(total_income - expenditures)
+        if curr == 'zł':
+            total_income = int(df["price_sell"].sum())
+            avg_income = int(df["price_sell"].mean())
+            expenditures = int(df["price_buy"].sum())
+            savings = int(total_income - expenditures)
+        else:
+            total_income = int(df["price_sell"].sum()/pln)
+            avg_income = int(df["price_sell"].mean()/pln)
+            expenditures = int(df["price_buy"].sum()/pln)
+            savings = int(total_income - expenditures)
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -48,21 +56,31 @@ def main(dev_run):
             calculations.create_card("🏦 Savings", savings, curr)
         st.write("")
 
-    def investments(df):
+    def investments(df, usd, pln):
         st.subheader("Investments")
         df = df[df["stock"] != 'Salary']
         df["owner"] = "Gim"
-        df_with_metrics = calculations.calculate_metrics(df, True)
+        df_with_metrics = calculations.calculate_metrics(df, usd, pln, True)
         owner_stats = calculations.calculate_owner_stats(df_with_metrics)
         stats = owner_stats['Gim']
+        tax_due = (stats['total_earnings'] * 19)/100
+        net_investments = stats['total_earnings'] - tax_due
+        if curr == 'zł':
+            stats['total_earnings'] *= pln
+            tax_due *= pln
+            net_investments *= pln
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             calculations.create_card("💰 Total Earnings", stats['total_earnings'], curr)
+        with col3:
+            calculations.create_card("💸 Tax due", tax_due, curr)
+        with col4:
+            calculations.create_card("💵 Net balance", net_investments, curr)
 
     salary(df)
-    investments(df)
+    investments(df, usd, pln)
 
 
 if __name__ == '__main__':
-    main(dev_run=True)
+    main(dev_run=False)
