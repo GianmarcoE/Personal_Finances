@@ -14,7 +14,7 @@ def create_unique_labels(stocks_df):
     label_counts = {}
 
     for _, row in stocks_df.iterrows():
-        base_label = row['label']
+        base_label = row['stock']
 
         # Keep track of how many times we've seen this label
         if base_label in label_counts:
@@ -211,10 +211,8 @@ if not filtered_df.empty:
     closed_transactions = open_df[open_df["date_sell"] != "OPEN"]
     # Show top and worst transactions (only calculate when we have data)
     # if not closed_transactions.empty:
-    top_3 = closed_transactions.nlargest(3, 'earning')[['owner', 'stock', 'earning']]
-    top_3['label'] = top_3['owner'] + ' - ' + top_3['stock']
-    worst_3 = closed_transactions.nsmallest(3, 'earning')[['owner', 'stock', 'earning']]
-    worst_3['label'] = worst_3['owner'] + ' - ' + worst_3['stock']
+    top_3 = closed_transactions.nlargest(3, 'earning')[['stock', 'earning']]
+    worst_3 = closed_transactions.nsmallest(3, 'earning')[['stock', 'earning']]
 
     fig_best = top_worst_graph(True, top_3, '#10b981', 'Best transactions')
     fig_worst = top_worst_graph(False, worst_3, '#ef4444', 'Worst transactions')

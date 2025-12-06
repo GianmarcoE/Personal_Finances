@@ -1,9 +1,8 @@
 import streamlit as st
-import plotly.express as px
 import plotly.graph_objects as go
 
 
-def graph(df, date, object, color):
+def graph(df, date, object, color, height=300):
     fig = go.Figure()
     # Add bar trace with modern styling
     fig.add_trace(go.Bar(
@@ -35,7 +34,7 @@ def graph(df, date, object, color):
         paper_bgcolor='#1E1E1E',
         font=dict(family='Arial', color='#1f2937'),
         margin=dict(l=40, r=40, t=60, b=50),
-        height=300,
+        height=height,
         showlegend=False
     )
     return fig
@@ -78,13 +77,14 @@ def income_expense_graph(df):
         ),
         yaxis=dict(
             showgrid=True,
+            range=[-1000, 9000],
             zeroline=True
         ),
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(family='Arial', color='#e5e7eb'),
         margin=dict(l=40, r=40, t=60, b=50),
-        height=310,
+        height=300,
         showlegend=False,
         legend=dict(
             orientation="h",
@@ -109,19 +109,49 @@ def cumulative_savings_graph(df):
         x=df_cumulative["date_buy"],
         y=df_cumulative["cumulative_savings"],
         mode='lines+markers',
-        line=dict(color='#6366f1', width=3),
-        marker=dict(size=8, color='#6366f1'),
+        line=dict(color='#10b981', width=3),
+        marker=dict(size=8, color='#10b981'),
         fill='tozeroy',  # Optional: fills area under the line
-        fillcolor='rgba(99, 102, 241, 0.1)'
+        fillcolor='rgba(16, 185, 129, 0.1)'
     ))
 
     fig.update_layout(
-        yaxis=dict(showgrid=True),
+        yaxis=dict(showgrid=True, range=[-2000, 20000]),
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(family='Arial', color='#e5e7eb'),
         margin=dict(l=40, r=40, t=40, b=40),
         height=300,
+    )
+
+    return fig
+
+
+def ring_chart(df):
+    # Calculate totals
+    total_earnings = df["price_sell"].sum()
+    total_savings = df["savings"].sum()
+    rest = total_earnings - total_savings
+
+    values = [total_savings, rest]
+
+    # Text only for savings slice, none for rest
+    text = ["{:.1%}".format(total_savings / total_earnings), ""]
+
+    fig = go.Figure(data=[go.Pie(
+        values=values,
+        hole=0.8,
+        text=text,                # per-slice text
+        textinfo="text",          # use the text list
+        marker=dict(colors=["#10b981", "rgba(16, 185, 129, 0.2)"]),
+        hoverinfo="none",
+        sort=False,
+    )])
+
+    fig.update_layout(
+        height=250,
+        showlegend=False,
+        margin=dict(t=20, b=20, l=0, r=0),
     )
 
     return fig
@@ -134,25 +164,30 @@ df = df.sort_values("date_buy").reset_index(drop=True)
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown("<h3 style='text-align: center;'>Salary</h3>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>Salary</h4>", unsafe_allow_html=True)
     fig = graph(df, "date_buy", "price_sell", "#10b981")
     st.plotly_chart(fig, use_container_width=True)
 with col2:
-    st.markdown("<h3 style='text-align: center;'>Expenses</h3>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center;'>Expenses</h4>", unsafe_allow_html=True)
     fig = graph(df, "date_buy", "price_buy", "#ef4444")
     st.plotly_chart(fig, use_container_width=True)
 with col3:
+    st.markdown("<h4 style='text-align: center;'>Combined</h4>", unsafe_allow_html=True)
+    st.plotly_chart(income_expense_graph(df))
+
+st.divider()
+
+col1, col2, col3 = st.columns([3, 2, 3])
+with col1:
     # Create a color column based on positive/negative values
     df["color"] = df["savings"].apply(lambda x: "#ef4444" if x < 0 else "#10b981")
 
-    st.markdown("<h3 style='text-align: center;'>Savings</h3>", unsafe_allow_html=True)
-    fig = graph(df, "date_buy", "savings", df["color"])
+    st.markdown("<h4 style='text-align: center;'>Savings</h4>", unsafe_allow_html=True)
+    fig = graph(df, "date_buy", "savings", df["color"], 310)
     st.plotly_chart(fig, use_container_width=True)
-
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown("<h3 style='text-align: center;'>Combined</h3>", unsafe_allow_html=True)
-    st.plotly_chart(income_expense_graph(df))
-with col2:
-    st.markdown("<h3 style='text-align: center;'>Savings over time</h3>", unsafe_allow_html=True)
+with col3:
+    st.markdown("<h4 style='text-align: center;'>Over time</h4>", unsafe_allow_html=True)
     st.plotly_chart(cumulative_savings_graph(df))
+with col2:
+    st.markdown("<h4 style='text-align: center;'>As part of earnings</h4>", unsafe_allow_html=True)
+    st.plotly_chart(ring_chart(df), use_container_width=True)
