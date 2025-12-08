@@ -116,7 +116,7 @@ def cumulative_savings_graph(df):
     ))
 
     fig.update_layout(
-        yaxis=dict(showgrid=True, range=[-2000, 20000]),
+        yaxis=dict(showgrid=True),
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(family='Arial', color='#e5e7eb'),
