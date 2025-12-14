@@ -1,45 +1,20 @@
 import streamlit as st
-import pandas as pd
-from utilities.db_operations import clear_cache, get_connection, load_data
+from utilities.db_operations import clear_cache
 from utilities import calculations
+from utilities.auth import require_auth
 
 
-def main(dev_run):
+def main():
     st.set_page_config(initial_sidebar_state="collapsed", layout="wide")
 
-    def login():
-        if "authenticated" not in st.session_state:
-            st.session_state.authenticated = False
-        if not st.session_state.authenticated:
-            col1, col2, col3 = st.columns([1, 1, 1])
-            with col2:
-                with st.form("login_form"):
-                    st.title("🔐 Login")
-                    username = st.text_input("Username")
-                    password = st.text_input("Password", type="password")
-                    submit = st.form_submit_button("Login")
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
 
-                if submit:
-                    allowed_users = st.secrets["users"]
-                    if username in allowed_users and password == allowed_users[username]["password"]:
-                        st.session_state.authenticated = True
-                        st.rerun()
-                    else:
-                        st.error("Invalid username or password")
-            st.stop()
+    require_auth(dev_run=False)
 
-    login()
-
-    if not dev_run:
-        engine = get_connection()
-        df = load_data(engine)
-    else:
-        df = pd.read_csv(r"C:\Users\gianm\OneDrive\Desktop\finances_db_test")
-
-    st.session_state["df"] = df
-    usd, pln = calculations.today_rate()
-    st.session_state["usd"] = usd
-    st.session_state["pln"] = pln
+    df = st.session_state.get("df")
+    usd = st.session_state.get("usd")
+    pln = st.session_state.get("pln")
 
     col_1, col_2 = st.columns([5, 1])
     with col_1:
@@ -106,4 +81,4 @@ def main(dev_run):
 
 
 if __name__ == '__main__':
-    main(dev_run=False)
+    main()

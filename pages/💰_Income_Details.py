@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
+from utilities.auth import require_auth
 
 
 def graph(df, date, object, color, height=300):
@@ -156,6 +157,10 @@ def ring_chart(df):
 
     return fig
 
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+require_auth(dev_run=False)
 
 df = st.session_state.get("df")
 df = df[df["stock"] == 'Salary']

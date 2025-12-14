@@ -4,6 +4,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.colors import qualitative
 from utilities import calculations
+from utilities.auth import require_auth
 
 
 def create_unique_labels(stocks_df):
@@ -133,6 +134,10 @@ def ring_chart(closed_transactions):
 
     return fig
 
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+require_auth(dev_run=False)
 
 # Retrieve df
 df = st.session_state.get("df")
