@@ -102,15 +102,16 @@ def ring_chart(closed_transactions):
         .sum()
     )
 
-    # Keep only profitable stocks
-    stock_summary = stock_summary[stock_summary["earning"] > 0]
-    
     top_4 = stock_summary.nlargest(4, 'earning')
     # Sum of the rest (not in top 4)
     others_sum = stock_summary[~stock_summary['stock'].isin(top_4['stock'])]['earning'].sum()
 
-    labels = list(top_4['stock']) + ["Others"]
-    values = list(top_4['earning']) + [others_sum]
+    labels = list(top_4['stock'])
+    values = list(top_4['earning'])
+
+    if others_sum > 0:
+        labels.append("Others")
+        values.append(others_sum)
 
     colors = qualitative.Safe[:len(labels)]
 
@@ -131,8 +132,7 @@ def ring_chart(closed_transactions):
             font=dict(size=15, family='Arial', color='#b8b6b6')
         ),
         height=320,
-        showlegend=False,
-        legend_title_text="Stocks",
+        showlegend=False
     )
 
     return fig
@@ -250,13 +250,12 @@ if not filtered_df.empty:
         st.line_chart(chart_df)
 
         with st.expander("Show all transactions details", expanded=False):
-            st.dataframe(open_df.drop(columns=["quantity_buy", "price_sell", "quantity_sell"]),
+            st.dataframe(open_df.drop(columns=["id", "owner", "quantity_buy", "price_sell", "quantity_sell",
+                                               "price_buy"]),
                          hide_index=True, column_config=
                          {
-                             "owner": st.column_config.TextColumn("Owner"),
                              "stock": st.column_config.TextColumn("Stock"),
                              "ticker": st.column_config.TextColumn("Ticker"),
-                             "price_buy": st.column_config.NumberColumn("Buy Price"),
                              "total_buy": st.column_config.NumberColumn("Buy tot", format="%.2f"),
                              "date_buy": st.column_config.DateColumn("Buy Date"),
                              "total_sell": st.column_config.NumberColumn("Sell tot", format="%.2f"),

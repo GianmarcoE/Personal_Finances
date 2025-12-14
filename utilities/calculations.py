@@ -22,7 +22,10 @@ def find_start(df, start):
     elif start == "∞":
         return df
 
-    return df[df["date_sell"] >= range_start]
+    return df[
+        (df["date_sell"] >= range_start) |
+        (df["date_sell"].isna())
+        ]
 
 
 @st.cache_data(ttl=600)  # Cache for 10 minute
