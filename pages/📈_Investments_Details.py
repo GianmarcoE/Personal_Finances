@@ -306,7 +306,7 @@ if not open_df.empty:
                         background-color:#1e1e1e;
                         border-radius:12px;
                         padding:12px;
-                        height:380px;  /* taller card */
+                        height:380px;
                         box-shadow:0 4px 10px rgba(0,0,0,0.2);
                         display:flex;
                         flex-direction:column;
@@ -314,10 +314,17 @@ if not open_df.empty:
                         overflow:hidden;
                     ">
                         <div style="font-size:12px;color:#9ca3af;margin-bottom:4px;">{ticker}</div>
-                        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">
+                        <div style="
+                            font-size:14px;
+                            font-weight:600;
+                            margin-bottom:6px;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                        ">
                             {title}
                         </div>
-                        {f'<img src="{thumbnail_url}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:6px;">' if thumbnail_url else ''}
+                        {f'<img src="{thumbnail_url}" style="width:100%; height:200px; object-fit:cover; flex-shrink:0; border-radius:8px; margin-bottom:6px;">' if thumbnail_url else ''}
                         <a href="{link}" target="_blank"
                            style="color:#10b981;font-size:13px;display:block;">
                            Read →
