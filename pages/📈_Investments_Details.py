@@ -275,3 +275,54 @@ if not filtered_df.empty:
         st.plotly_chart(fig_ring, use_container_width=True)
 else:
     st.info("Select at least one owner to view data.")
+
+# News section
+if not open_df.empty:
+    open_df = open_df[open_df["date_sell"] == "OPEN"]
+    # Get unique tickers for open positions
+    open_tickers = open_df["ticker"].unique()[:3]
+
+    news_by_ticker = {}
+    for ticker in open_tickers:
+        news = calculations.get_one_news(ticker)
+        if news:
+            news_by_ticker[ticker] = news
+
+    if news_by_ticker:
+        st.subheader("📰 Latest news")
+
+        cols = st.columns(len(news_by_ticker))
+
+        for col, (ticker, item) in zip(cols, news_by_ticker.items()):
+            with col:
+                content = item.get('content', {})
+                title = content.get("title", "No title")
+                link = content.get("clickThroughUrl", {}).get("url", "#")
+                thumbnail_url = content.get("thumbnail", {}).get("originalUrl", "")
+
+                st.markdown(
+                    f"""
+                    <div style="
+                        background-color:#1e1e1e;
+                        border-radius:12px;
+                        padding:12px;
+                        height:380px;  /* taller card */
+                        box-shadow:0 4px 10px rgba(0,0,0,0.2);
+                        display:flex;
+                        flex-direction:column;
+                        justify-content:space-between;
+                        overflow:hidden;
+                    ">
+                        <div style="font-size:12px;color:#9ca3af;margin-bottom:4px;">{ticker}</div>
+                        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">
+                            {title}
+                        </div>
+                        {f'<img src="{thumbnail_url}" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:6px;">' if thumbnail_url else ''}
+                        <a href="{link}" target="_blank"
+                           style="color:#10b981;font-size:13px;display:block;">
+                           Read →
+                        </a>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )

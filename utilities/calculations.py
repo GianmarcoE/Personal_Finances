@@ -251,3 +251,9 @@ def calculate_owner_stats(df):
         }
 
     return stats
+
+
+@st.cache_data(ttl=3600)
+def get_one_news(ticker):
+    news = yf.Ticker(ticker).news
+    return news[0] if news else None
