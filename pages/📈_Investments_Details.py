@@ -102,6 +102,9 @@ def ring_chart(closed_transactions):
         .sum()
     )
 
+    # Keep only profitable stocks
+    stock_summary = stock_summary[stock_summary["earning"] > 0]
+    
     top_4 = stock_summary.nlargest(4, 'earning')
     # Sum of the rest (not in top 4)
     others_sum = stock_summary[~stock_summary['stock'].isin(top_4['stock'])]['earning'].sum()
