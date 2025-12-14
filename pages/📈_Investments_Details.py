@@ -146,7 +146,13 @@ df["owner"] = "Gim"
 usd_rate = st.session_state.get("usd")
 pln_rate = st.session_state.get("pln")
 
-st.title("Investments Portfolio")
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.header("Investments Portfolio")
+with col2:
+    st.write("")
+    start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='YTD', selection_mode='single')
+df = calculations.find_start(df, start)
 st.write("")
 
 today = datetime.date.today()

@@ -16,16 +16,18 @@ def main():
     usd = st.session_state.get("usd")
     pln = st.session_state.get("pln")
 
-    col_1, col_2 = st.columns([5, 1])
+    col_1, col_2 = st.columns([8, 1])
     with col_1:
-        st.title("Overview")
+        st.header("Overview")
+        st.write("")
+        start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='YTD', selection_mode='single')
+        df = calculations.find_start(df, start)
     with col_2:
         if st.button("🔄 Refresh Data"):
             clear_cache()
             st.rerun()
         curr = st.segmented_control('', ['zł', '€'], default='zł', selection_mode="single")
 
-    st.write("")
     st.write("")
 
     def salary(df):

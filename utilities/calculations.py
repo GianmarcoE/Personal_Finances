@@ -6,6 +6,25 @@ import datetime
 import yfinance as yf
 
 
+def find_start(df, start):
+    today = datetime.date.today()
+    df["date_sell"] = pd.to_datetime(df["date_sell"]).dt.date
+    if start == "1M":
+        range_start = today - datetime.timedelta(days=30)
+    elif start == "3M":
+        range_start = today - datetime.timedelta(days=90)
+    elif start == "6M":
+        range_start = today - datetime.timedelta(days=180)
+    elif start == "YTD":
+        range_start = datetime.date(today.year, 1, 1)
+    elif start == "1Y":
+        range_start = today - datetime.timedelta(days=365)
+    elif start == "∞":
+        return df
+
+    return df[df["date_sell"] >= range_start]
+
+
 @st.cache_data(ttl=600)  # Cache for 10 minute
 def get_current_prices(df_filtered):
     """Get current prices with caching"""
