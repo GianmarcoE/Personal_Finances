@@ -21,6 +21,7 @@ def require_auth(dev_run):
 
 
 def show_login():
+    st.set_page_config(initial_sidebar_state="collapsed", layout="wide")
     if not st.session_state.authenticated:
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:

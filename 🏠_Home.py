@@ -5,8 +5,6 @@ from utilities.auth import require_auth
 
 
 def main():
-    st.set_page_config(initial_sidebar_state="collapsed", layout="wide")
-
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
 
