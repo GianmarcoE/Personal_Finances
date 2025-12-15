@@ -1,5 +1,5 @@
 import streamlit as st
-from utilities.db_operations import clear_cache
+
 from utilities import calculations
 from utilities.auth import require_auth
 
@@ -14,17 +14,17 @@ def main():
     usd = st.session_state.get("usd")
     pln = st.session_state.get("pln")
 
-    col_1, col_2 = st.columns([8, 1])
+    col_1, col_2, col_3 = st.columns([23, 12, 4])
     with col_1:
         st.header("Overview")
         st.write("")
+    with col_2:
+        st.write("")
         start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='YTD', selection_mode='single')
         df = calculations.find_start(df, start)
-    with col_2:
-        if st.button("🔄 Refresh Data"):
-            clear_cache()
-            st.rerun()
-        curr = st.segmented_control('', ['zł', '€'], default='zł', selection_mode="single")
+    with col_3:
+        st.write("")
+        curr = st.segmented_control(None, ['zł', '€'], default='zł', selection_mode="single")
 
     st.write("")
 
