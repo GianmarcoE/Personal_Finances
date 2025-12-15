@@ -131,7 +131,7 @@ def ring_chart(closed_transactions):
             x=0.25,  # Center the title
             font=dict(size=15, family='Arial', color='#b8b6b6')
         ),
-        height=320,
+        height=300,
         showlegend=False
     )
 
@@ -197,7 +197,7 @@ if selected_owners:
             border: 1px solid #ddd;
             border-radius: 10px;
             padding: 15px;
-            margin: 10px 0;
+            margin: 10px 15px;
             background-color: #222;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         ">
