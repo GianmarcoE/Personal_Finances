@@ -131,7 +131,7 @@ def ring_chart(closed_transactions):
             x=0.25,  # Center the title
             font=dict(size=15, family='Arial', color='#b8b6b6')
         ),
-        height=300,
+        height=310,
         showlegend=False
     )
 
@@ -149,7 +149,7 @@ df["owner"] = "Gim"
 usd_rate = st.session_state.get("usd")
 pln_rate = st.session_state.get("pln")
 
-col1, col2 = st.columns([3, 1])
+marginleft, col1, col2, marginright = st.columns([1, 6, 2, 1])
 with col1:
     st.header("Investments Portfolio")
 with col2:
@@ -160,7 +160,7 @@ st.write("")
 
 today = datetime.date.today()
 
-col1, col2, col3 = st.columns([2, 1, 1])
+marginleft, col1, col2, col3, marginright = st.columns([1, 4, 2, 2, 1])
 with col1:
     with st.expander("Settings ⚙️", expanded=False):
         col_1, col_2 = st.columns([2, 5])
@@ -265,13 +265,12 @@ if not filtered_df.empty:
                              "earning": st.column_config.NumberColumn("Earnings", format="%.2f €"),
                          }
                          )
-        st.write("")
 
     with col2:
         st.plotly_chart(fig_best, use_container_width=True)
-        st.write("")
         st.plotly_chart(fig_worst, use_container_width=True)
     with col3:
+        st.write("")
         st.plotly_chart(fig_ring, use_container_width=True)
 else:
     st.info("Select at least one owner to view data.")
@@ -289,11 +288,12 @@ if not open_df.empty:
             news_by_ticker[ticker] = news
 
     if news_by_ticker:
-        st.subheader("📰 Latest news")
+        with col1:
+            st.subheader("📰 Latest news")
 
-        cols = st.columns(len(news_by_ticker))
+        cols = st.columns([3, 8, 8, 8, 3])
 
-        for col, (ticker, item) in zip(cols, news_by_ticker.items()):
+        for col, (ticker, item) in zip(cols[1:-1], news_by_ticker.items()):
             with col:
                 content = item.get('content', {})
                 title = content.get("title", "No title")

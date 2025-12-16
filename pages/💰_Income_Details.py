@@ -167,7 +167,7 @@ df = df[df["stock"] == 'Salary']
 df["savings"] = df['price_sell'] - df['price_buy']
 df = df.sort_values("date_buy").reset_index(drop=True)
 
-col1, col2, col3 = st.columns(3)
+marginleft, col1, col2, col3, marginright = st.columns([3, 8, 8, 8, 3])
 with col1:
     st.markdown("<h4 style='text-align: center;'>Salary</h4>", unsafe_allow_html=True)
     fig = graph(df, "date_buy", "price_sell", "#10b981")
@@ -182,7 +182,8 @@ with col3:
 
 st.divider()
 
-col1, col2, col3 = st.columns([3, 2, 3])
+marginleft, col1, col2, col3, marginright = st.columns([9, 24, 16, 24, 9])
+# col1, col2, col3 = st.columns([3, 2, 3])
 with col1:
     # Create a color column based on positive/negative values
     df["color"] = df["savings"].apply(lambda x: "#ef4444" if x < 0 else "#10b981")
