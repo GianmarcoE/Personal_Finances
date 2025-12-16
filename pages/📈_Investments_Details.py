@@ -288,7 +288,8 @@ if not open_df.empty:
             news_by_ticker[ticker] = news
 
     if news_by_ticker:
-        with col1:
+        marginl, center, marginr = st.columns([1, 8, 1])
+        with center:
             st.subheader("📰 Latest news")
 
         cols = st.columns([3, 8, 8, 8, 3])
