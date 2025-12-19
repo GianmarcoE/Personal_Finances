@@ -86,7 +86,7 @@ def top_worst_graph(is_top, stocks, color, graph_title):
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(family='Arial', color='#1f2937'),
-        margin=dict(l=40, r=40, t=50, b=60),
+        margin=dict(l=20, r=20, t=50, b=60),
         height=280,
         width=280,
         showlegend=False
