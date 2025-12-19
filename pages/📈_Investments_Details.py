@@ -7,6 +7,108 @@ from utilities import calculations
 from utilities.auth import require_auth
 
 
+def modern_portfolio_chart(df):
+    """
+    Modern, clean portfolio line chart with positive/negative areas.
+    """
+    y_values = df.iloc[:, 0]
+    x_values = df.index
+
+    fig = go.Figure()
+
+    # --- Segment containers ---
+    pos_segments = []
+    neg_segments = []
+
+    cur_x, cur_y = [], []
+    cur_sign = None
+
+    for i in range(len(y_values)):
+        sign = y_values[i] >= 0
+
+        if cur_sign is None:
+            cur_sign = sign
+
+        # Detect sign change
+        if sign != cur_sign and i > 0:
+            # Interpolate zero crossing
+            y0, y1 = y_values[i - 1], y_values[i]
+            x0, x1 = x_values[i - 1], x_values[i]
+            t = -y0 / (y1 - y0)
+            x_cross = x0 + (x1 - x0) * t
+
+            cur_x.append(x_cross)
+            cur_y.append(0)
+
+            if cur_sign:
+                pos_segments.append((cur_x, cur_y))
+            else:
+                neg_segments.append((cur_x, cur_y))
+
+            cur_x = [x_cross]
+            cur_y = [0]
+            cur_sign = sign
+
+        cur_x.append(x_values[i])
+        cur_y.append(y_values[i])
+
+    # Final segment
+    if cur_x:
+        (pos_segments if cur_sign else neg_segments).append((cur_x, cur_y))
+
+    # --- Positive segments ---
+    for x, y in pos_segments:
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y,
+            mode="lines",
+            line=dict(color="#22c55e", width=3, shape="spline"),
+            fill="tozeroy",
+            fillcolor="rgba(34,197,94,0.12)",
+            hovertemplate="<b>%{x|%d %b %Y}</b><br>€ %{y:,.2f}<extra></extra>",
+            showlegend=False
+        ))
+
+    # --- Negative segments ---
+    for x, y in neg_segments:
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y,
+            mode="lines",
+            line=dict(color="#ef4444", width=3, shape="spline"),
+            fill="tozeroy",
+            fillcolor="rgba(239,68,68,0.12)",
+            hovertemplate="<b>%{x|%d %b %Y}</b><br>€ %{y:,.2f}<extra></extra>",
+            showlegend=False
+        ))
+
+    # --- Layout: slick, clean, tech ---
+    fig.update_layout(
+        height=360,
+        margin=dict(l=0, r=0, t=0, b=20),
+        hovermode="x unified",
+
+        xaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            tickformat="%b %Y",
+            ticks="outside",
+            ticklen=6
+        ),
+
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.05)",
+            zeroline=True,
+            zerolinecolor="rgba(255,255,255,0.25)",
+            zerolinewidth=1,
+            tickformat=".,0f"
+        ),
+    )
+
+    return fig
+
+
 def create_unique_labels(stocks_df):
     """
     Create unique labels for stocks that might have duplicates
@@ -15,7 +117,7 @@ def create_unique_labels(stocks_df):
     label_counts = {}
 
     for _, row in stocks_df.iterrows():
-        base_label = row['stock']
+        base_label = row['stock'][:8]
 
         # Keep track of how many times we've seen this label
         if base_label in label_counts:
@@ -86,7 +188,7 @@ def top_worst_graph(is_top, stocks, color, graph_title):
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(family='Arial', color='#1f2937'),
-        margin=dict(l=20, r=20, t=50, b=60),
+        margin=dict(l=30, r=30, t=50, b=60),
         height=280,
         width=280,
         showlegend=False
@@ -252,7 +354,8 @@ if not filtered_df.empty:
     with col1:
         st.markdown("Total Earnings")
         chart_df.index = pd.to_datetime(chart_df.index)
-        st.line_chart(chart_df)
+        fig = modern_portfolio_chart(chart_df)
+        st.plotly_chart(fig, use_container_width=True)
 
         with st.expander("Show all transactions details", expanded=False):
             st.dataframe(open_df.drop(columns=["id", "owner", "quantity_buy", "price_sell", "quantity_sell",
