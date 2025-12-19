@@ -86,7 +86,7 @@ def top_worst_graph(is_top, stocks, color, graph_title):
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(family='Arial', color='#1f2937'),
-        margin=dict(l=60, r=60, t=50, b=60),
+        margin=dict(l=40, r=40, t=50, b=60),
         height=280,
         width=280,
         showlegend=False
@@ -115,24 +115,31 @@ def ring_chart(closed_transactions):
 
     colors = qualitative.Safe[:len(labels)]
 
-    # Create donut chart
+    # Create donut chart with modern styling
     fig = go.Figure(data=[go.Pie(
         labels=labels,
         values=values,
         hole=0.8,
-        textinfo='label+percent',  # only percent on chart
-        textposition='outside',  # move labels outside
-        marker=dict(colors=colors)
+        textinfo='label+percent',
+        textposition='outside',
+        marker=dict(
+            colors=colors,
+            line=dict(color='#1e1e1e', width=3)  # Add gap between slices
+        ),
+        pull=[0.02] * len(labels),  # Slight pull creates separation
+        rotation=45  # Rotate for better visual balance
     )])
 
     fig.update_layout(
         title=dict(
             text="Most profitable stocks",
-            x=0.25,  # Center the title
+            x=0.25,
             font=dict(size=15, family='Arial', color='#b8b6b6')
         ),
         height=310,
-        showlegend=False
+        showlegend=False,
+        paper_bgcolor='#1e1e1e',  # Match background
+        plot_bgcolor='#1e1e1e'
     )
 
     return fig
@@ -149,7 +156,7 @@ df["owner"] = "Gim"
 usd_rate = st.session_state.get("usd")
 pln_rate = st.session_state.get("pln")
 
-marginleft, col1, col2, marginright = st.columns([1, 6, 2, 1])
+marginleft, col1, col2, marginright = st.columns([2, 11, 5, 2])
 with col1:
     st.header("Investments Portfolio")
 with col2:
@@ -213,8 +220,6 @@ if selected_owners:
             </div>
         </div>
         """, unsafe_allow_html=True)
-
-    st.write("")
 
 # Filter data
 filtered_df = df_with_metrics[df_with_metrics["owner"].isin(selected_owners)] if selected_owners else pd.DataFrame()
