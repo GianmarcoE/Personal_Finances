@@ -172,7 +172,7 @@ def top_worst_graph(is_top, stocks, color, graph_title):
     fig.update_layout(
         title=dict(
             text=graph_title,
-            x=0.35,  # Center the title
+            x=0.225,  # Center the title
             font=dict(size=15, family='Arial', color='#b8b6b6')
         ),
         xaxis=dict(
