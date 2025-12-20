@@ -235,7 +235,7 @@ def ring_chart(closed_transactions):
     fig.update_layout(
         title=dict(
             text="Most profitable stocks",
-            x=0.25,
+            x=0.16,
             font=dict(size=15, family='Arial', color='#b8b6b6')
         ),
         height=310,
