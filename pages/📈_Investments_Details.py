@@ -273,7 +273,7 @@ today = datetime.date.today()
 marginleft, col1, col2, col3, marginright = st.columns([1, 4, 2, 2, 1])
 with col1:
     with st.expander("Settings ⚙️", expanded=False):
-        col_1, col_2 = st.columns([2, 5])
+        col_1, col_2 = st.columns([3, 5])
         with col_1:
             include_dividends = st.toggle("Include dividends", value=True, key="include_dividends")
         with col_2:
@@ -294,35 +294,34 @@ top_3_earners = sorted(owner_stats.items(),
 
 # Display owner cards
 selected_owners = ['Gim']
-if selected_owners:
-    stats = owner_stats['Gim']
+stats = owner_stats['Gim']
 
-    with col3:
-        # Create card styling
-        earnings_color = "green" if stats["total_earnings"] >= 0 else "#d61111"
-        worst_color = "green" if stats["worst_trade"] >= 0 else "#d61111"
+with col3:
+    # Create card styling
+    earnings_color = "green" if stats["total_earnings"] >= 0 else "#d61111"
+    worst_color = "green" if stats["worst_trade"] >= 0 else "#d61111"
 
-        st.markdown(f"""
-        <div style="
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 15px;
-            background-color: #222;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        ">
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div><strong>💰 Total Earnings:</strong> 
-                    <span style="color: {earnings_color}">€{stats['total_earnings']:.2f}</span>
-                </div>
-                <div><strong>📅 Avg. Hold Time:</strong> {stats['avg_holding_days']:.0f} days</div>
-                <div><strong>🎯 Win Rate:</strong> {stats['win_rate']:.1f}%</div>
-                <div><strong>📊 Transactions:</strong> {stats['total_transactions']} closed, {stats['open_positions']} open</div>
-                <div><strong>🏆 Best Trade:</strong> <span style="color: green">€{stats['best_trade']:.2f}</span></div>
-                <div><strong>📉 Worst Trade:</strong> <span style="color: {worst_color}">€{stats['worst_trade']:.2f}</span></div>
+    st.markdown(f"""
+    <div style="
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 15px 20px 15px;
+        background-color: #222;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    ">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div><strong>💰 Total Earnings:</strong> 
+                <span style="color: {earnings_color}">€{stats['total_earnings']:.2f}</span>
             </div>
+            <div><strong>📅 Avg. Hold Time:</strong> {stats['avg_holding_days']:.0f} days</div>
+            <div><strong>🎯 Win Rate:</strong> {stats['win_rate']:.1f}%</div>
+            <div><strong>📊 Transactions:</strong> {stats['total_transactions']}</div>
+            <div><strong>🏆 Best Trade:</strong> <span style="color: green">€{stats['best_trade']:.2f}</span></div>
+            <div><strong>📉 Worst Trade:</strong> <span style="color: {worst_color}">€{stats['worst_trade']:.2f}</span></div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
 # Filter data
 filtered_df = df_with_metrics[df_with_metrics["owner"].isin(selected_owners)] if selected_owners else pd.DataFrame()
@@ -394,64 +393,85 @@ else:
     st.info("Select at least one owner to view data.")
 
 # News section
-try:
-    if not open_df.empty:
-        open_df = open_df[open_df["date_sell"] == "OPEN"]
-        # Get unique tickers for open positions
-        open_tickers = open_df["ticker"].unique()[:3]
+open_df = open_df[open_df["date_sell"] == "OPEN"]
+# Get unique tickers for open positions
+open_tickers = open_df["ticker"].unique()[:3]
 
-        news_by_ticker = {}
-        for ticker in open_tickers:
-            news = calculations.get_one_news(ticker)
-            if news:
+news_by_ticker = {}
+for ticker in open_tickers:
+    # Try to get a valid news item (with retries if needed)
+    max_attempts = 5  # Try up to 5 news articles
+    for attempt in range(max_attempts):
+        news = calculations.get_one_news(ticker, index=attempt)
+
+        # If no more news available, break
+        if not news:
+            break
+
+        # Validate that news has the expected structure AND a valid link
+        if isinstance(news, dict) and news.get('content'):
+            content = news.get('content', {})
+            click_through = content.get("clickThroughUrl") or {}
+            link = click_through.get("url") if isinstance(click_through, dict) else None
+
+            # Check if we have a valid link
+            if link and link != "#" and link.startswith("http"):
                 news_by_ticker[ticker] = news
+                break  # Found valid news, stop trying
 
-        if news_by_ticker:
-            marginl, center, marginr = st.columns([1, 8, 1])
-            with center:
-                st.subheader("📰 Latest news")
+if news_by_ticker:
+    marginl, center, marginr = st.columns([1, 8, 1])
+    with center:
+        st.subheader("📰 Latest news")
 
-            cols = st.columns([3, 8, 8, 8, 3])
+    cols = st.columns([3, 8, 8, 8, 3])
 
-            for col, (ticker, item) in zip(cols[1:-1], news_by_ticker.items()):
-                with col:
-                    content = item.get('content', {})
-                    title = content.get("title", "No title")
-                    link = content.get("clickThroughUrl", {}).get("url", "#")
-                    thumbnail_url = content.get("thumbnail", {}).get("originalUrl", "")
+    for col, (ticker, item) in zip(cols[1:-1], news_by_ticker.items()):
+        with col:
+            # Safely extract nested values with defaults
+            content = item.get('content') or {}
+            title = content.get("title") or "No title"
 
-                    st.markdown(
-                        f"""
-                        <div style="
-                            background-color:#1e1e1e;
-                            border-radius:12px;
-                            padding:12px;
-                            height:380px;
-                            box-shadow:0 4px 10px rgba(0,0,0,0.2);
-                            display:flex;
-                            flex-direction:column;
-                            justify-content:space-between;
-                            overflow:hidden;
-                        ">
-                            <div style="font-size:12px;color:#9ca3af;margin-bottom:4px;">{ticker}</div>
-                            <div style="
-                                font-size:14px;
-                                font-weight:600;
-                                margin-bottom:6px;
-                                white-space: nowrap;
-                                overflow: hidden;
-                                text-overflow: ellipsis;
-                            ">
-                                {title}
-                            </div>
-                            {f'<img src="{thumbnail_url}" style="width:100%; height:200px; object-fit:cover; flex-shrink:0; border-radius:8px; margin-bottom:6px;">' if thumbnail_url else ''}
-                            <a href="{link}" target="_blank"
-                               style="color:#10b981;font-size:13px;display:block;">
-                               Read →
-                            </a>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-except Exception as e:
-    print(f"Can't find news for each stock: {e}")
+            # Safely get nested clickThroughUrl
+            click_through = content.get("clickThroughUrl") or {}
+            link = click_through.get("url") if isinstance(click_through, dict) else "#"
+            if not link:
+                link = "#"
+
+            # Safely get thumbnail
+            thumbnail = content.get("thumbnail") or {}
+            thumbnail_url = thumbnail.get("originalUrl") if isinstance(thumbnail, dict) else ""
+
+            st.markdown(
+                f"""
+                <div style="
+                    background-color:#1e1e1e;
+                    border-radius:12px;
+                    padding:12px;
+                    height:380px;
+                    box-shadow:0 4px 10px rgba(0,0,0,0.2);
+                    display:flex;
+                    flex-direction:column;
+                    justify-content:space-between;
+                    overflow:hidden;
+                ">
+                    <div style="font-size:12px;color:#9ca3af;margin-bottom:4px;">{ticker}</div>
+                    <div style="
+                        font-size:14px;
+                        font-weight:600;
+                        margin-bottom:6px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">
+                        {title}
+                    </div>
+                    {f'<img src="{thumbnail_url}" style="width:100%; height:200px; object-fit:cover; flex-shrink:0; border-radius:8px; margin-bottom:6px;">' if thumbnail_url else ''}
+                    <a href="{link}" target="_blank"
+                       style="color:#10b981;font-size:13px;display:block;">
+                       Read →
+                    </a>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )

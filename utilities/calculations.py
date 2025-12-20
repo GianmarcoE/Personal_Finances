@@ -44,7 +44,6 @@ def find_capital(df, usd, pln):
     """
     capital = 0
     available_cash = 0
-    earnings = 0
 
     # Create a timeline of all buy and sell events
     events = []
@@ -312,6 +311,6 @@ def calculate_owner_stats(df):
 
 
 @st.cache_data(ttl=3600)
-def get_one_news(ticker):
+def get_one_news(ticker, index=0):
     news = yf.Ticker(ticker).news
-    return news[0] if news else None
+    return news[index] if news and len(news) > index else None
