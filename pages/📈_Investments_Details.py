@@ -260,12 +260,13 @@ pln_rate = st.session_state.get("pln")
 
 marginleft, col1, col2, marginright = st.columns([2, 11, 5, 2])
 with col1:
-    st.header("Investments Portfolio")
+    st.header(f"Trading Portfolio")
 with col2:
     st.write("")
     start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='YTD', selection_mode='single')
-df = calculations.find_start(df, start)
+
 st.write("")
+df = calculations.find_start(df, start)
 
 today = datetime.date.today()
 
@@ -347,12 +348,21 @@ if not filtered_df.empty:
     else:
         chart_data = filtered_df
 
+    capital = calculations.find_capital(chart_data, usd_rate, pln_rate)
     # Create chart data
     daily = calculations.create_daily_cumulative(chart_data)
     chart_df = daily.pivot(index="date_sell", columns="owner", values="cumulative").ffill()
 
     with col1:
-        st.markdown("Total Earnings")
+        percentage_return = round(stats['total_earnings'] * 100 / capital, 2)
+        color = 'rgba(34,197,94,1)' if percentage_return >= 0 else 'rgba(239,68,68,1)'  # Green or red text
+        sign = '+' if percentage_return >= 0 else ''
+        st.markdown(
+            f"Total Earnings: <span style='color: {color}; "
+            f"background-color: rgba(34,197,94,0.12);"
+            f"padding: 2px 6px; border-radius: 4px;'>{sign}{percentage_return}%</span>",
+            unsafe_allow_html=True
+        )
         chart_df.index = pd.to_datetime(chart_df.index)
         fig = modern_portfolio_chart(chart_df)
         st.plotly_chart(fig, use_container_width=True)
@@ -384,61 +394,64 @@ else:
     st.info("Select at least one owner to view data.")
 
 # News section
-if not open_df.empty:
-    open_df = open_df[open_df["date_sell"] == "OPEN"]
-    # Get unique tickers for open positions
-    open_tickers = open_df["ticker"].unique()[:3]
+try:
+    if not open_df.empty:
+        open_df = open_df[open_df["date_sell"] == "OPEN"]
+        # Get unique tickers for open positions
+        open_tickers = open_df["ticker"].unique()[:3]
 
-    news_by_ticker = {}
-    for ticker in open_tickers:
-        news = calculations.get_one_news(ticker)
-        if news:
-            news_by_ticker[ticker] = news
+        news_by_ticker = {}
+        for ticker in open_tickers:
+            news = calculations.get_one_news(ticker)
+            if news:
+                news_by_ticker[ticker] = news
 
-    if news_by_ticker:
-        marginl, center, marginr = st.columns([1, 8, 1])
-        with center:
-            st.subheader("📰 Latest news")
+        if news_by_ticker:
+            marginl, center, marginr = st.columns([1, 8, 1])
+            with center:
+                st.subheader("📰 Latest news")
 
-        cols = st.columns([3, 8, 8, 8, 3])
+            cols = st.columns([3, 8, 8, 8, 3])
 
-        for col, (ticker, item) in zip(cols[1:-1], news_by_ticker.items()):
-            with col:
-                content = item.get('content', {})
-                title = content.get("title", "No title")
-                link = content.get("clickThroughUrl", {}).get("url", "#")
-                thumbnail_url = content.get("thumbnail", {}).get("originalUrl", "")
+            for col, (ticker, item) in zip(cols[1:-1], news_by_ticker.items()):
+                with col:
+                    content = item.get('content', {})
+                    title = content.get("title", "No title")
+                    link = content.get("clickThroughUrl", {}).get("url", "#")
+                    thumbnail_url = content.get("thumbnail", {}).get("originalUrl", "")
 
-                st.markdown(
-                    f"""
-                    <div style="
-                        background-color:#1e1e1e;
-                        border-radius:12px;
-                        padding:12px;
-                        height:380px;
-                        box-shadow:0 4px 10px rgba(0,0,0,0.2);
-                        display:flex;
-                        flex-direction:column;
-                        justify-content:space-between;
-                        overflow:hidden;
-                    ">
-                        <div style="font-size:12px;color:#9ca3af;margin-bottom:4px;">{ticker}</div>
+                    st.markdown(
+                        f"""
                         <div style="
-                            font-size:14px;
-                            font-weight:600;
-                            margin-bottom:6px;
-                            white-space: nowrap;
-                            overflow: hidden;
-                            text-overflow: ellipsis;
+                            background-color:#1e1e1e;
+                            border-radius:12px;
+                            padding:12px;
+                            height:380px;
+                            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+                            display:flex;
+                            flex-direction:column;
+                            justify-content:space-between;
+                            overflow:hidden;
                         ">
-                            {title}
+                            <div style="font-size:12px;color:#9ca3af;margin-bottom:4px;">{ticker}</div>
+                            <div style="
+                                font-size:14px;
+                                font-weight:600;
+                                margin-bottom:6px;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            ">
+                                {title}
+                            </div>
+                            {f'<img src="{thumbnail_url}" style="width:100%; height:200px; object-fit:cover; flex-shrink:0; border-radius:8px; margin-bottom:6px;">' if thumbnail_url else ''}
+                            <a href="{link}" target="_blank"
+                               style="color:#10b981;font-size:13px;display:block;">
+                               Read →
+                            </a>
                         </div>
-                        {f'<img src="{thumbnail_url}" style="width:100%; height:200px; object-fit:cover; flex-shrink:0; border-radius:8px; margin-bottom:6px;">' if thumbnail_url else ''}
-                        <a href="{link}" target="_blank"
-                           style="color:#10b981;font-size:13px;display:block;">
-                           Read →
-                        </a>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                        """,
+                        unsafe_allow_html=True,
+                    )
+except Exception as e:
+    print(f"Can't find news for each stock: {e}")

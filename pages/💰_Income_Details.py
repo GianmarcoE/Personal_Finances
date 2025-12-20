@@ -183,7 +183,6 @@ with col3:
 st.divider()
 
 marginleft, col1, col2, col3, marginright = st.columns([9, 24, 16, 24, 9])
-# col1, col2, col3 = st.columns([3, 2, 3])
 with col1:
     # Create a color column based on positive/negative values
     df["color"] = df["savings"].apply(lambda x: "#ef4444" if x < 0 else "#10b981")

@@ -36,6 +36,64 @@ def get_current_prices(df_filtered):
     return api_current_price(df_filtered.copy())
 
 
+def find_capital(df, usd, pln):
+    """
+        Calculate the capital pulled into the portfolio, accounting for transaction timing.
+
+        Capital must be pulled if a buy occurs before sufficient sell proceeds are available.
+    """
+    capital = 0
+    available_cash = 0
+    earnings = 0
+
+    # Create a timeline of all buy and sell events
+    events = []
+
+    for idx, row in df.iterrows():
+        # Add buy event
+        events.append({
+            'date': row['date_buy'],
+            'type': 'buy',
+            'amount': abs(row["price_buy"] * row["quantity_buy"]),
+            'currency': row['currency']
+        })
+
+        # Add sell event if position is closed
+        if pd.notna(row['date_sell']):
+            events.append({
+                'date': row['date_sell'],
+                'type': 'sell',
+                'amount': abs(row["price_sell"] * row["quantity_sell"] + row["dividends"]),
+                'currency': row['currency']
+            })
+
+        # Sort all events chronologically
+    events_sorted = sorted(events, key=lambda x: x['date'])
+
+    # Process events in chronological order
+    for event in events_sorted:
+        if event['currency'] == 'USD':
+            event['amount'] /= usd
+        elif event['currency'] == 'PLN':
+            event['amount'] /= pln
+
+        if event['type'] == 'buy':
+            # Check if we have enough cash from previous sells
+            if available_cash < event['amount']:
+                # Need to pull new capital
+                capital += event['amount'] - available_cash
+                available_cash = 0
+            else:
+                # Can cover with existing cash
+                available_cash -= event['amount']
+
+        elif event['type'] == 'sell':
+            # Add proceeds to available cash
+            available_cash += event['amount']
+
+    return round(capital)
+
+
 def create_daily_cumulative(df):
     """Create daily cumulative data"""
     daily = df.groupby(["owner", "date_sell"])["earning"].sum().reset_index()
