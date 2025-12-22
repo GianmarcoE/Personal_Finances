@@ -8,7 +8,7 @@ def info():
 
 pages = [
 st.Page("home.py", title="Home"),
-            st.Page("income_Details.py", title="Income"),
+            st.Page("income_details.py", title="Income"),
             st.Page("investments_details.py", title="Investments"),
             st.Page(info, title="Info")
             # st.Page("home.py", title="🏠 Home"),
