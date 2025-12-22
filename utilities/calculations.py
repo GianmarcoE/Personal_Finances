@@ -310,7 +310,79 @@ def calculate_owner_stats(df):
     return stats
 
 
+def toggle_form(form_name):
+    if st.session_state.active_form == form_name:
+        st.session_state.active_form = None  # Close if already open
+    else:
+        st.session_state.active_form = form_name  # Open the new form
+
+
 @st.cache_data(ttl=3600)
 def get_one_news(ticker, index=0):
     news = yf.Ticker(ticker).news
     return news[index] if news and len(news) > index else None
+
+
+@st.dialog("Add transaction")
+def add_transaction_dialog(df, today):
+    if st.session_state.active_form == "A":
+        # Initialize session state for sold checkbox if not exists
+        if 'sold_checkbox' not in st.session_state:
+            st.session_state.sold_checkbox = False
+
+        # Checkbox outside form with session state
+        sold = st.checkbox("Has this stock been sold?", key='sold_checkbox')
+
+        with st.form("form_a"):
+            stock = st.text_input("Stock")
+            ticker = st.text_input("Ticker (e.g. TSLA)")
+            price_buy = st.number_input("Stock buy price", step=0.001)
+            quantity_buy = st.number_input("Q.ty", step=0.01)
+            date_buy = st.date_input("Date buy", value=today)
+            currency = st.selectbox("Currency", ["EUR", "USD", "PLN"])
+
+            # Initialize default values
+            price_sell = None
+            date_sell = None
+            quantity_sell = None
+            dividends = 0
+
+            # Show additional fields based on session state
+            if st.session_state.sold_checkbox:
+                price_sell = st.number_input("Stock sale price", step=0.001)
+                quantity_sell = quantity_buy  # changed to avoid manual input
+                date_sell = st.date_input("Date sold", value=today)
+                dividends = st.number_input("Dividends received", step=0.01)
+
+            if st.form_submit_button("Submit"):
+                pass
+    elif st.session_state.active_form == "B":
+        # SOLUTION 1: Move the owner selection outside the form
+        action = st.radio("", ("Close transaction", "Additional Purchase"))
+
+        if action == "Close transaction":
+            # Filter open positions for that owner
+            open_stocks = df[(df["owner"] == "Gim") & (df["date_sell"].isna())]
+
+            if not open_stocks.empty:
+                with st.form("form_b"):
+                    # Create selectbox of stock names
+                    selected_stock = st.selectbox("Select open stock", open_stocks["stock"].unique())
+                    price_sell = st.number_input("Sell Price", step=0.001)
+                    date_sell = st.date_input("Date sold", value=today)
+                    dividends = st.number_input("Dividends received", step=0.01)
+
+                    if st.form_submit_button("Submit"):
+                        pass
+        else:
+            # Filter open positions for that owner
+            open_stocks = df[(df["owner"] == "Gim") & (df["date_sell"].isna())]
+            if not open_stocks.empty:
+                with st.form("form_b"):
+                    # Create selectbox of stock names
+                    selected_stock = st.selectbox("Select open stock", open_stocks["stock"].unique())
+                    new_price = st.number_input("Buy Price", step=0.001)
+                    new_qty = st.number_input("Q.ty", step=0.01)
+
+                    if st.form_submit_button("Submit"):
+                        pass

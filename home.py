@@ -1,5 +1,4 @@
 import streamlit as st
-
 from utilities import calculations
 from utilities.auth import require_auth
 
@@ -62,7 +61,9 @@ def main():
         marginl, center, marginr = st.columns([1, 8, 1])
         with center:
             st.subheader("Investments")
-            df = df[df["stock"] != 'Salary']
+            saving_df = df[df["stock"] == 'Savings']
+            saving = saving_df["price_sell"].sum()
+            df = df[~df["stock"].isin(["Salary", "Savings"])]
             df["owner"] = "Gim"
             df_with_metrics = calculations.calculate_metrics(df, usd, pln, True)
             owner_stats = calculations.calculate_owner_stats(df_with_metrics)
@@ -70,17 +71,20 @@ def main():
             tax_due = (stats['total_earnings'] * 19)/100
             net_investments = stats['total_earnings'] - tax_due
             if curr == 'zł':
+                saving *= pln
                 stats['total_earnings'] *= pln
                 tax_due *= pln
                 net_investments *= pln
 
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                calculations.create_card("💰 Total Earnings", stats['total_earnings'], curr)
+                calculations.create_card("💰 Stocks Earnings", stats['total_earnings'], curr)
+            with col2:
+                calculations.create_card("🏦 Savings Acc", saving, curr)
             with col3:
-                calculations.create_card("💸 Tax due", tax_due, curr)
+                calculations.create_card("💸 Tax Due", tax_due, curr)
             with col4:
-                calculations.create_card("💵 Net balance", net_investments, curr)
+                calculations.create_card("💵 Net Balance", net_investments + saving, curr)
 
     salary(df)
     investments(df, usd, pln)

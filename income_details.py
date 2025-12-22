@@ -171,16 +171,18 @@ marginleft, col1, col2, col3, marginright = st.columns([3, 8, 8, 8, 3])
 with col1:
     st.markdown("<h4 style='text-align: center;'>Salary</h4>", unsafe_allow_html=True)
     fig = graph(df, "date_buy", "price_sell", "#10b981")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 with col2:
     st.markdown("<h4 style='text-align: center;'>Expenses</h4>", unsafe_allow_html=True)
     fig = graph(df, "date_buy", "price_buy", "#ef4444")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 with col3:
     st.markdown("<h4 style='text-align: center;'>Combined</h4>", unsafe_allow_html=True)
     st.plotly_chart(income_expense_graph(df))
 
-st.divider()
+marginleft, center, marginright = st.columns([1, 8, 1])
+with center:
+    st.divider()
 
 marginleft, col1, col2, col3, marginright = st.columns([9, 24, 16, 24, 9])
 with col1:
@@ -189,10 +191,10 @@ with col1:
 
     st.markdown("<h4 style='text-align: center;'>Savings</h4>", unsafe_allow_html=True)
     fig = graph(df, "date_buy", "savings", df["color"], 310)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 with col3:
     st.markdown("<h4 style='text-align: center;'>Over time</h4>", unsafe_allow_html=True)
     st.plotly_chart(cumulative_savings_graph(df))
 with col2:
     st.markdown("<h4 style='text-align: center;'>As part of earnings</h4>", unsafe_allow_html=True)
-    st.plotly_chart(ring_chart(df), use_container_width=True)
+    st.plotly_chart(ring_chart(df), width='stretch')

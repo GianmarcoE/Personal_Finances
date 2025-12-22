@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from utilities.db_operations import get_connection, load_data
 from utilities import calculations
-from utilities.db_operations import clear_cache
 
 
 def require_auth(dev_run):
@@ -19,13 +18,10 @@ def require_auth(dev_run):
     usd, pln = calculations.today_rate()
     st.session_state["usd"] = usd
     st.session_state["pln"] = pln
-    if st.sidebar.button("🔄 Refresh Data"):
-        clear_cache()
-        st.rerun()
 
 
 def show_login():
-    st.set_page_config(initial_sidebar_state="collapsed", layout="wide")
+    st.set_page_config(layout="wide")
     if not st.session_state.authenticated:
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:

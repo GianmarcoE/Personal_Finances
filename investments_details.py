@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from plotly.colors import qualitative
 from utilities import calculations
 from utilities.auth import require_auth
+from utilities.db_operations import clear_cache
 
 
 def modern_portfolio_chart(df):
@@ -253,7 +254,7 @@ require_auth(dev_run=False)
 
 # Retrieve df
 df = st.session_state.get("df")
-df = df[df["stock"] != 'Salary']
+df = df[~df["stock"].isin(["Salary", "Savings"])]
 df["owner"] = "Gim"
 usd_rate = st.session_state.get("usd")
 pln_rate = st.session_state.get("pln")
@@ -273,12 +274,29 @@ today = datetime.date.today()
 marginleft, col1, col2, col3, marginright = st.columns([1, 4, 2, 2, 1])
 with col1:
     with st.expander("Settings ⚙️", expanded=False):
-        col_1, col_2 = st.columns([3, 5])
+        col_1, col_2 = st.columns(2)
+        # Session state to track button click
+        if "active_form" not in st.session_state:
+            st.session_state.active_form = None
         with col_1:
-            include_dividends = st.toggle("Include dividends", value=True, key="include_dividends")
+            include_dividends = st.toggle("Incl. dividends", value=True, key="include_dividends")
         with col_2:
-            include_open = st.toggle("Include open positions", value=False, key="include_open")
-
+            include_open = st.toggle("Incl. open positions", value=False, key="include_open")
+        st.divider()
+        col_1, col_2 = st.columns(2)
+        with col_1:
+            if st.button("➕ Add transaction", width='stretch'):
+                calculations.toggle_form("A")
+                calculations.add_transaction_dialog(df, today)
+        with col_2:
+            if st.button("✔️ Modify open position", width='stretch'):
+                calculations.toggle_form("B")
+                calculations.add_transaction_dialog(df, today)
+        col_1, col_2, col_3 = st.columns([1, 2, 1])
+        with col_2:
+            if st.button("🔄 Refresh Data", width='stretch'):
+                clear_cache()
+                st.rerun()
     st.write("")
 
 # Calculate metrics with caching
@@ -364,18 +382,15 @@ if not filtered_df.empty:
         )
         chart_df.index = pd.to_datetime(chart_df.index)
         fig = modern_portfolio_chart(chart_df)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         with st.expander("Show all transactions details", expanded=False):
-            st.dataframe(open_df.drop(columns=["id", "owner", "quantity_buy", "price_sell", "quantity_sell",
-                                               "price_buy"]),
+            st.dataframe(open_df.drop(columns=["id", "ticker", "owner", "quantity_buy", "price_sell", "quantity_sell",
+                                               "total_buy", "total_sell", "price_buy"]),
                          hide_index=True, column_config=
                          {
                              "stock": st.column_config.TextColumn("Stock"),
-                             "ticker": st.column_config.TextColumn("Ticker"),
-                             "total_buy": st.column_config.NumberColumn("Buy tot", format="%.2f"),
                              "date_buy": st.column_config.DateColumn("Buy Date"),
-                             "total_sell": st.column_config.NumberColumn("Sell tot", format="%.2f"),
                              "date_sell": st.column_config.DateColumn("Sell Date"),
                              "currency": st.column_config.TextColumn("Currency"),
                              "dividends": st.column_config.NumberColumn("Dividends", format="%.2f"),
@@ -384,11 +399,11 @@ if not filtered_df.empty:
                          )
 
     with col2:
-        st.plotly_chart(fig_best, use_container_width=True)
-        st.plotly_chart(fig_worst, use_container_width=True)
+        st.plotly_chart(fig_best, width='stretch')
+        st.plotly_chart(fig_worst, width='stretch')
     with col3:
         st.write("")
-        st.plotly_chart(fig_ring, use_container_width=True)
+        st.plotly_chart(fig_ring, width='stretch')
 else:
     st.info("Select at least one owner to view data.")
 
