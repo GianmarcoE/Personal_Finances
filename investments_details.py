@@ -276,9 +276,6 @@ marginleft, col1, col2, col3, marginright = st.columns([1, 4, 2, 2, 1])
 with col1:
     with st.expander("Settings ⚙️", expanded=False):
         col_1, col_2 = st.columns(2)
-        # Session state to track button click
-        if "active_form" not in st.session_state:
-            st.session_state.active_form = None
         with col_1:
             include_dividends = st.toggle("Incl. dividends", value=True, key="include_dividends")
         with col_2:
@@ -287,12 +284,10 @@ with col1:
         col_1, col_2 = st.columns(2)
         with col_1:
             if st.button("➕ Add transaction", width='stretch'):
-                calculations.toggle_form("A")
-                calculations.add_transaction_dialog(df, today)
+                calculations.add_transaction_dialog('A', df, today)
         with col_2:
             if st.button("✔️ Modify open position", width='stretch'):
-                calculations.toggle_form("B")
-                calculations.add_transaction_dialog(df, today)
+                calculations.add_transaction_dialog('B', df, today)
         col_1, col_2, col_3 = st.columns([1, 2, 1])
         with col_2:
             if st.button("🔄 Refresh Data", width='stretch'):
@@ -438,7 +433,7 @@ for ticker in open_tickers:
 if news_by_ticker:
     marginl, center, marginr = st.columns([1, 8, 1])
     with center:
-        st.subheader("📰 Latest news", anchor=False)
+        st.subheader("📰 Latest News", anchor=False)
 
     cols = st.columns([3, 8, 8, 8, 3])
 

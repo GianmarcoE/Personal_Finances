@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, update, MetaData, Table
 import streamlit as st
 import pandas as pd
 
@@ -26,6 +26,88 @@ def load_cached_data():
     engine = get_connection()
     df = load_data(engine)
     return df
+
+
+def new_stock_to_db(engine, stock, price_buy, date_buy, quantity_buy,
+                    price_sell, date_sell, quantity_sell, currency, ticker, dividends):
+    if stock and price_buy > 0 and date_buy:
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO transactions (stock, ticker, price_buy, date_buy, quantity_buy,
+                                          price_sell, date_sell, quantity_sell, currency, dividends)
+                VALUES (:stock, :ticker, :price_buy, :date_buy, :quantity_buy,
+                        :price_sell, :date_sell, :quantity_sell, :currency, :dividends)
+            """), {
+                "stock": stock,
+                "ticker": ticker,
+                "price_buy": price_buy,
+                "date_buy": date_buy,
+                "quantity_buy": quantity_buy,
+                "price_sell": price_sell,
+                "date_sell": date_sell,
+                "quantity_sell": quantity_sell,
+                "currency": currency,
+                "dividends": dividends
+            })
+        st.success("Transaction added.")
+        st.session_state.show_form = False
+        st.cache_data.clear()
+        st.rerun()
+    else:
+        st.error("Please fill all fields.")
+
+
+def close_stock(engine, stock, price_sell, date_sell, quantity_sell, dividends):
+    if stock and price_sell > 0 and date_sell:
+        metadata = MetaData()
+        transactions_table = Table("transactions", metadata, autoload_with=engine)
+        with engine.connect() as conn:
+            stmt = (
+                update(transactions_table)
+                .where(
+                    (transactions_table.c.stock == stock) &
+                    (transactions_table.c.date_sell == None)
+                )
+                .values(
+                    price_sell=price_sell,
+                    quantity_sell=quantity_sell,
+                    date_sell=date_sell,
+                    dividends=dividends
+                )
+            )
+            conn.execute(stmt)
+            conn.commit()
+            st.success("Transaction closed!")
+            st.session_state.show_form2 = False
+            st.cache_data.clear()
+            st.rerun()
+    else:
+        st.error("Please fill all fields.")
+
+
+def add_etf(engine, selected_stock, new_price, new_qty):
+    if selected_stock and new_price > 0 and new_qty > 0:
+        metadata = MetaData()
+        transactions_table = Table("transactions", metadata, autoload_with=engine)
+        avg = ((transactions_table.c.price_buy * transactions_table.c.quantity_buy) +
+               (new_price * new_qty)) / (transactions_table.c.quantity_buy + new_qty)
+        with engine.connect() as conn:
+            stmt = (
+                update(transactions_table)
+                .where(
+                    (transactions_table.c.stock == selected_stock) &
+                    (transactions_table.c.date_sell == None)
+                )
+                .values(
+                    price_buy=avg,
+                    quantity_buy=transactions_table.c.quantity_buy + new_qty,
+                )
+            )
+            conn.execute(stmt)
+            conn.commit()
+            st.success("ETF buying added")
+    else:
+        st.error("Please fill all fields.")
 
 
 # df = load_cached_data()

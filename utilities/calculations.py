@@ -4,6 +4,8 @@ import requests
 import json
 import datetime
 import yfinance as yf
+from utilities import db_operations
+from utilities.db_operations import clear_cache
 
 
 def find_start(df, start):
@@ -310,13 +312,6 @@ def calculate_owner_stats(df):
     return stats
 
 
-def toggle_form(form_name):
-    if st.session_state.active_form == form_name:
-        st.session_state.active_form = None  # Close if already open
-    else:
-        st.session_state.active_form = form_name  # Open the new form
-
-
 @st.cache_data(ttl=3600)
 def get_one_news(ticker, index=0):
     news = yf.Ticker(ticker).news
@@ -324,8 +319,8 @@ def get_one_news(ticker, index=0):
 
 
 @st.dialog("Add transaction")
-def add_transaction_dialog(df, today):
-    if st.session_state.active_form == "A":
+def add_transaction_dialog(typ, df, today):
+    if typ == "A":
         # Initialize session state for sold checkbox if not exists
         if 'sold_checkbox' not in st.session_state:
             st.session_state.sold_checkbox = False
@@ -355,8 +350,15 @@ def add_transaction_dialog(df, today):
                 dividends = st.number_input("Dividends received", step=0.01)
 
             if st.form_submit_button("Submit"):
-                pass
-    elif st.session_state.active_form == "B":
+                engine = db_operations.get_connection()
+                db_operations.new_stock_to_db(engine, stock, price_buy, date_buy, quantity_buy,
+                                              price_sell, date_sell, quantity_sell, currency, ticker, dividends)
+                clear_cache()  # Clear cache after adding new data
+                st.success("Transaction added successfully!")
+                # Reset the checkbox after successful submission
+                st.session_state.sold_checkbox = False
+
+    elif typ == "B":
         # SOLUTION 1: Move the owner selection outside the form
         action = st.radio("", ("Close transaction", "Additional Purchase"))
 
@@ -369,11 +371,18 @@ def add_transaction_dialog(df, today):
                     # Create selectbox of stock names
                     selected_stock = st.selectbox("Select open stock", open_stocks["stock"].unique())
                     price_sell = st.number_input("Sell Price", step=0.001)
+                    quantity_sell = float(open_stocks.loc[
+                                                    open_stocks["stock"] == selected_stock, "quantity_buy"
+                                                ].iloc[0])
                     date_sell = st.date_input("Date sold", value=today)
                     dividends = st.number_input("Dividends received", step=0.01)
 
                     if st.form_submit_button("Submit"):
-                        pass
+                        engine = db_operations.get_connection()
+                        db_operations.close_stock(engine, selected_stock, price_sell, date_sell,
+                                                  quantity_sell, dividends)
+                        clear_cache()  # Clear cache after closing position
+                        st.success("Position closed successfully!")
         else:
             # Filter open positions for that owner
             open_stocks = df[(df["owner"] == "Gim") & (df["date_sell"].isna())]
@@ -385,4 +394,6 @@ def add_transaction_dialog(df, today):
                     new_qty = st.number_input("Q.ty", step=0.01)
 
                     if st.form_submit_button("Submit"):
-                        pass
+                        engine = db_operations.get_connection()
+                        db_operations.add_etf(engine, selected_stock, new_price, new_qty)
+                        clear_cache()  # Clear cache after closing position
