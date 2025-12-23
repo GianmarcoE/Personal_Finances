@@ -2,19 +2,16 @@ import streamlit as st
 
 
 def info():
+    email = st.secrets["email"]
     st.title("Info")
-    st.write("App developed by Gianmarco Ercolani. For info and support, contact ohohoh@gmail.com")
+    st.write(f"App developed by Gianmarco Ercolani. For info and support, contact {email}")
 
 
 pages = [
-st.Page("home.py", title="Home"),
+            st.Page("home.py", title="Home"),
             st.Page("income_details.py", title="Income"),
             st.Page("investments_details.py", title="Investments"),
             st.Page(info, title="Info")
-            # st.Page("home.py", title="🏠 Home"),
-            # st.Page("income_Details.py", title="💰 Income Details"),
-            # st.Page("investments_details.py", title="📈 Investments Details"),
-            # st.Page(info, title="ℹ️ Info")
         ]
 
 pg = st.navigation(pages, position="top")

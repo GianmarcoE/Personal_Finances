@@ -17,7 +17,7 @@ def main():
     with center:
         col_1, col_2, col_3 = st.columns([23, 12, 4])
         with col_1:
-            st.header("Overview")
+            st.header("Overview", anchor=False)
             st.write("")
         with col_2:
             st.write("")
@@ -34,7 +34,7 @@ def main():
 
         marginl, center, marginr = st.columns([1, 8, 1])
         with center:
-            st.subheader("Income & Expenses")
+            st.subheader("Income & Expenses", anchor=False)
             if curr == 'zł':
                 total_income = int(df["price_sell"].sum())
                 avg_income = int(df["price_sell"].mean())
@@ -60,7 +60,7 @@ def main():
     def investments(df, usd, pln):
         marginl, center, marginr = st.columns([1, 8, 1])
         with center:
-            st.subheader("Investments")
+            st.subheader("Investments", anchor=False)
             saving_df = df[df["stock"] == 'Savings']
             saving = saving_df["price_sell"].sum()
             df = df[~df["stock"].isin(["Salary", "Savings"])]

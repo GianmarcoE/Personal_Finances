@@ -162,6 +162,7 @@ def top_worst_graph(is_top, stocks, color, graph_title):
             # This creates rounded corners - adjust the radius as needed
             cornerradius=8
         ),
+        texttemplate="%{y:.0f}",  # ← integer display
         text=stocks['earning'],
         textposition='outside',  # Position text outside/above the bars
         # Make bars thinner
@@ -261,7 +262,7 @@ pln_rate = st.session_state.get("pln")
 
 marginleft, col1, col2, marginright = st.columns([2, 11, 5, 2])
 with col1:
-    st.header(f"Trading Portfolio")
+    st.header(f"Trading Portfolio", anchor=False)
 with col2:
     st.write("")
     start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='YTD', selection_mode='single')
@@ -437,7 +438,7 @@ for ticker in open_tickers:
 if news_by_ticker:
     marginl, center, marginr = st.columns([1, 8, 1])
     with center:
-        st.subheader("📰 Latest news")
+        st.subheader("📰 Latest news", anchor=False)
 
     cols = st.columns([3, 8, 8, 8, 3])
 
