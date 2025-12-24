@@ -249,6 +249,95 @@ def ring_chart(closed_transactions):
     return fig
 
 
+def heatmap(daily):
+    daily["date"] = pd.to_datetime(daily["date_sell"])
+    daily["dow"] = daily["date"].dt.weekday  # 0=Mon
+    daily["week"] = daily["date"].dt.isocalendar().week
+    daily["year"] = daily["date"].dt.year
+
+    daily["week_index"] = (
+            daily["date"]
+            - pd.to_timedelta(daily["dow"], unit="D")
+    ).dt.isocalendar().week
+
+    daily = daily[daily["dow"] < 5]
+
+    calendar = daily.pivot_table(
+        index="dow",
+        columns="week_index",
+        values="earning",
+        aggfunc="sum"
+    )
+
+    calendar = calendar.reindex(index=range(5))  # Force Mon–Fri rows
+
+    # Get actual min and max values
+    min_val = calendar.values.min() if not pd.isna(calendar.values.min()) else 0
+    max_val = calendar.values.max() if not pd.isna(calendar.values.max()) else 0
+
+    # Calculate the position of zero in the scale (0 to 1)
+    total_range = max_val - min_val
+    zero_position = (0 - min_val) / total_range if total_range > 0 else 0.5
+
+    fig = go.Figure(
+        go.Heatmap(
+            z=calendar.values,
+            x=[f"W{w}" for w in calendar.columns],
+            y=["Mon", "Tue", "Wed", "Thu", "Fri"],
+            colorscale=[
+                [0.0, "#ef4444"],  # Deep red at min_val
+                [zero_position * 0.5, "#882020"],  # Mid-dark red
+                [zero_position * 0.9, "#241919"],  # Dark red approaching zero
+                [max(0, zero_position - 0.01), "#1E1E1E"],  # Background just before zero
+                [zero_position, "#1E1E1E"],  # Background at zero
+                [min(1, zero_position + 0.01), "#1E1E1E"],  # Background just after zero
+                [zero_position + (1 - zero_position) * 0.1, "#19241a"],  # Dark green leaving zero
+                [zero_position + (1 - zero_position) * 0.5, "#0d7a57"],  # Mid-dark green
+                [1.0, "#10b981"],  # Bright green at max_val
+            ],
+            zauto=False,
+            zmin=min_val,
+            zmax=max_val,
+            # REMOVED zmid=0 - this was causing the problem!
+            hovertemplate="<b>%{x}</b><br>%{y}<br>P/L: <b>€%{z:,.2f}</b><extra></extra>",
+            showscale=False,
+            colorbar=dict(
+                thickness=10,
+                len=0.7,
+                x=1.02,
+                tickformat="€.,0f",
+                tickfont=dict(size=10, color='#9ca3af'),
+                outlinewidth=0
+            ),
+            xgap=4,
+            ygap=6,
+        )
+    )
+
+    fig.update_layout(
+        height=80,
+        margin=dict(l=10, r=30, t=0, b=10),
+        xaxis=dict(
+            showgrid=False,
+            showticklabels=False,
+            zeroline=False,
+            type='category'
+        ),
+        yaxis=dict(
+            showgrid=False,
+            side='left',
+            tickfont=dict(size=11, color='#9ca3af'),
+            type='category',
+            autorange='reversed'
+        ),
+        plot_bgcolor='#1e1e1e',
+        paper_bgcolor='#1e1e1e',
+        font=dict(family='Arial')
+    )
+
+    return fig
+
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 require_auth(dev_run=False)
@@ -380,7 +469,10 @@ if not filtered_df.empty:
         fig = modern_portfolio_chart(chart_df)
         st.plotly_chart(fig, width='stretch')
 
-        with st.expander("Show all transactions details", expanded=False):
+        # with st.expander("Show all transactions details", expanded=False):
+        @st.dialog("All transactions")
+        def all_transactions():
+            st.plotly_chart(heatmap(daily), width='stretch', config={"displayModeBar": False})
             st.dataframe(open_df.drop(columns=["id", "ticker", "owner", "quantity_buy", "price_sell", "quantity_sell",
                                                "total_buy", "total_sell", "price_buy"]),
                          hide_index=True, column_config=
@@ -393,6 +485,9 @@ if not filtered_df.empty:
                              "earning": st.column_config.NumberColumn("Earnings", format="%.2f €"),
                          }
                          )
+
+        if st.button("Go to all transactions list", width='stretch'):
+            all_transactions()
 
     with col2:
         st.plotly_chart(fig_best, width='stretch')
