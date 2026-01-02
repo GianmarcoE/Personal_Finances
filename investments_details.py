@@ -456,9 +456,16 @@ if not filtered_df.empty:
     open_df = calculations.get_current_prices(filtered_df)
     closed_transactions = open_df[open_df["date_sell"] != "OPEN"]
     # Show top and worst transactions (only calculate when we have data)
-    # if not closed_transactions.empty:
-    top_3 = closed_transactions.nlargest(3, 'earning')[['stock', 'earning']]
-    worst_3 = closed_transactions.nsmallest(3, 'earning')[['stock', 'earning']]
+    top_3 = (
+        closed_transactions
+        .query("earning > 0")
+        .nlargest(3, "earning")[["stock", "earning"]]
+    )
+    worst_3 = (
+        closed_transactions
+        .query("earning < 0")
+        .nsmallest(3, "earning")[["stock", "earning"]]
+    )
 
     fig_best = top_worst_graph(True, top_3, '#10b981', 'Best transactions')
     fig_worst = top_worst_graph(False, worst_3, '#ef4444', 'Worst transactions')
