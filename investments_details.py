@@ -137,7 +137,12 @@ def create_unique_labels(stocks_df):
 def top_worst_graph(is_top, stocks, color, graph_title):
     if is_top:
         max_value = stocks["earning"].max()
-        graph_range = [0, max_value * 1.2]
+        if max_value > 0:
+            graph_range = [0, max_value * 1.2]
+        else:
+            max_value = stocks["earning"].min()
+            color = "#ef4444"
+            graph_range = [0, max_value * 1.2]
     else:
         max_value = stocks["earning"].min()
         if max_value < 0:
@@ -149,7 +154,16 @@ def top_worst_graph(is_top, stocks, color, graph_title):
 
     fig = go.Figure()
 
-    unique_labels = create_unique_labels(stocks)
+    if len(stocks) != 0:
+        unique_labels = create_unique_labels(stocks)
+    else:
+        unique_labels = ['']
+    if len(stocks) == 3:
+        width = 0.4
+    elif len(stocks) == 2:
+        width = 0.3
+    else:
+        width = 0.15
 
     # Add bar trace with modern styling
     fig.add_trace(go.Bar(
@@ -403,6 +417,14 @@ with col3:
     # Create card styling
     earnings_color = "green" if stats["total_earnings"] >= 0 else "#d61111"
     worst_color = "green" if stats["worst_trade"] >= 0 else "#d61111"
+    if stats['best_trade'] < 0:
+        stats['best_trade'] = 0
+    else:
+        stats['best_trade'] = stats['best_trade']
+    if stats['worst_trade'] > 0:
+        stats['worst_trade'] = 0
+    else:
+        stats['worst_trade'] = stats['worst_trade']
 
     st.markdown(f"""
     <div style="
@@ -470,7 +492,7 @@ if not filtered_df.empty:
         st.plotly_chart(fig, width='stretch')
 
         # with st.expander("Show all transactions details", expanded=False):
-        @st.dialog("All transactions")
+        @st.dialog("Daily P/L")
         def all_transactions():
             st.plotly_chart(heatmap(daily), width='stretch', config={"displayModeBar": False})
             st.dataframe(open_df.drop(columns=["id", "ticker", "owner", "quantity_buy", "price_sell", "quantity_sell",
@@ -486,7 +508,7 @@ if not filtered_df.empty:
                          }
                          )
 
-        if st.button("Go to all transactions list", width='stretch'):
+        if st.button("See all transactions", width='stretch'):
             all_transactions()
 
     with col2:

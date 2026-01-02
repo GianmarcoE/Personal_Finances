@@ -121,7 +121,8 @@ def api_current_price(df):
             group_by="ticker",
             auto_adjust=True,
             prepost=True,
-            threads=True
+            threads=True,
+            progress=False  # Suppress progress bar
         )
 
         # Extract the most recent close price for each ticker
@@ -130,8 +131,14 @@ def api_current_price(df):
         if len(open_tickers) == 1:
             # Single ticker case - data structure is different
             ticker = open_tickers[0]
-            if not current_prices.empty and "Close" in current_prices.columns:
-                ticker_prices[ticker] = current_prices["Close"].iloc[-1]
+            # Check if we have any data and a Close column
+            if not current_prices.empty:
+                if "Close" in current_prices.columns:
+                    # Flat structure: columns are ['Close', 'Open', etc.]
+                    ticker_prices[ticker] = current_prices["Close"].iloc[-1]
+                elif isinstance(current_prices.columns, pd.MultiIndex):
+                    # Sometimes even single ticker returns MultiIndex
+                    ticker_prices[ticker] = current_prices[ticker]["Close"].iloc[-1]
         else:
             # Multiple tickers case
             for ticker in open_tickers:
@@ -155,18 +162,20 @@ def api_current_price(df):
             df.loc[stock_mask, "earning"] = round(df.loc[stock_mask, "total_sell"] - df.loc[stock_mask, "total_buy"], 2)
             df.loc[stock_mask, "date_sell"] = today
 
-        # Convert all earnings to EUR at once (only for updated rows)
-        updated_mask = df["ticker"].isin(ticker_prices.keys()) & open_mask
+        # Create mask for rows that were successfully updated
+        updated_mask = df["ticker"].isin(ticker_prices.keys()) & (df["date_sell"] == today)
+
         if updated_mask.any():
-            # Call convert_to_eur only on rows that were updated
+            # Convert all earnings to EUR at once (only for updated rows)
             df.loc[updated_mask, "earning"] = df.loc[updated_mask].apply(
                 lambda row: convert_to_eur(row, "earning", "date_sell"), axis=1
             )
 
-        # Set date_sell to "OPEN" for all updated rows
-        df.loc[updated_mask, "date_sell"] = "OPEN"
+            # Set date_sell to "OPEN" for all updated rows
+            df.loc[updated_mask, "date_sell"] = "OPEN"
 
     except Exception as e:
+        print(f"Bulk fetch failed: {e}")
         # Fallback to original method if bulk fetch fails
         today = datetime.date.today()
 
@@ -180,6 +189,7 @@ def api_current_price(df):
                     df.loc[stock_mask, "total_sell"] - df.loc[stock_mask, "total_buy"], 2)
                 df.loc[stock_mask, "date_sell"] = today
             except Exception as ticker_error:
+                print(f"Failed to fetch {ticker}: {ticker_error}")
                 pass
 
         # Convert all earnings to EUR at once in fallback too
@@ -188,7 +198,7 @@ def api_current_price(df):
             df.loc[updated_mask, "earning"] = df.loc[updated_mask].apply(
                 lambda row: convert_to_eur(row, "earning", "date_sell"), axis=1
             )
-        df.loc[updated_mask, "date_sell"] = "OPEN"
+            df.loc[updated_mask, "date_sell"] = "OPEN"
 
     return df
 
