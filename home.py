@@ -21,7 +21,7 @@ def main():
             st.write("")
         with col_2:
             st.write("")
-            start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='YTD', selection_mode='single')
+            start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='1Y', selection_mode='single')
             df = calculations.find_start(df, start)
         with col_3:
             st.write("")
@@ -86,7 +86,10 @@ def main():
             with col4:
                 calculations.create_card("💵 Net Balance", net_investments + saving, curr)
 
-    salary(df)
+    try:
+        salary(df)
+    except Exception:
+        pass
     investments(df, usd, pln)
 
 

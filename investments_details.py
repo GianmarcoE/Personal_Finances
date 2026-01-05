@@ -180,7 +180,7 @@ def top_worst_graph(is_top, stocks, color, graph_title):
         text=stocks['earning'],
         textposition='outside',  # Position text outside/above the bars
         # Make bars thinner
-        width=0.4,  # Adjust this value (0.1 to 1.0) to control bar thickness
+        width=width,  # Adjust this value (0.1 to 1.0) to control bar thickness
         textfont=dict(color='white', size=12, family='Arial')
     ))
 
@@ -363,12 +363,13 @@ df["owner"] = "Gim"
 usd_rate = st.session_state.get("usd")
 pln_rate = st.session_state.get("pln")
 
-marginleft, col1, col2, marginright = st.columns([2, 11, 5, 2])
+marginleft, col1, marginright = st.columns([1, 8, 1])
 with col1:
-    st.header(f"Trading Portfolio", anchor=False)
-with col2:
-    st.write("")
-    start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='YTD', selection_mode='single')
+    with st.container(horizontal=True, horizontal_alignment="distribute"):
+        st.header(f"Trading Portfolio")
+        with st.container(horizontal_alignment="right", width="content"):
+            st.write("")
+            start = st.segmented_control(None, ["1M", "3M", "6M", "YTD", "1Y", "∞"], default='1Y', selection_mode='single')
 
 st.write("")
 df = calculations.find_start(df, start)
